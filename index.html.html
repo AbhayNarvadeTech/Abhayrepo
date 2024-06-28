@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Capture</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        video,
+        img {
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #ccc;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <button id="openCameraBtn">Open Camera</button>
+        <button id="switchCameraBtn" style="display:none;">Switch Camera</button>
+        <button id="captureBtn" style="display:none;">Capture Photo</button>
+        <video id="cameraStream" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <img id="capturedImage" alt="Captured Image" style="display:none;">
+    </div>
+    <script>
+        let currentStream = null;
+        let useFrontCamera = true;
+
+        function stopStreamedVideo(videoElem) {
+            const stream = videoElem.srcObject;
+            const tracks = stream.getTracks();
+
+            tracks.forEach(function (track) {
+                track.stop();
+            });
+
+            videoElem.srcObject = null;
+        }
+
+        function startCamera() {
+            if (currentStream) {
+                stopStreamedVideo(document.getElementById('cameraStream'));
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: useFrontCamera ? 'user' : 'environment'
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function (stream) {
+                    currentStream = stream;
+                    const video = document.getElementById('cameraStream');
+                    video.srcObject = stream;
+                    document.getElementById('switchCameraBtn').style.display = 'inline-block';
+                    document.getElementById('captureBtn').style.display = 'inline-block';
+                })
+                .catch(function (error) {
+                    console.error('Error accessing camera: ', error);
+                });
+        }
+
+        document.getElementById('openCameraBtn').addEventListener('click', function () {
+            startCamera();
+        });
+
+        document.getElementById('switchCameraBtn').addEventListener('click', function () {
+            useFrontCamera = !useFrontCamera;
+            startCamera();
+        });
+
+        document.getElementById('captureBtn').addEventListener('click', function () {
+            const video = document.getElementById('cameraStream');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            // Set canvas size to match video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current frame from the video on the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get the image data URL from the canvas
+            const imageDataURL = canvas.toDataURL('image/png');
+
+            // Display the captured image
+            const img = document.getElementById('capturedImage');
+            img.src = imageDataURL;
+            img.style.display = 'block';
+        });
+
+    </script>
+</body>
+
+</html>
